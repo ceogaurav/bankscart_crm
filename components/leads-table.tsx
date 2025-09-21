@@ -99,9 +99,9 @@ export function LeadsTable({ leads = [], telecallers = [] }: LeadsTableProps) {
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = searchTerm === "" || 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       lead.phone.includes(searchTerm) ||
-      lead.company.toLowerCase().includes(searchTerm.toLowerCase())
+      (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter
     const matchesPriority = priorityFilter === "all" || lead.priority === priorityFilter
@@ -143,9 +143,17 @@ export function LeadsTable({ leads = [], telecallers = [] }: LeadsTableProps) {
     }
   }
 
+  const [isCallInitiated, setIsCallInitiated] = useState(false) // New state to track if call is initiated
+
   const handleCallInitiated = (lead: Lead) => {
     setSelectedLead(lead)
     setIsStatusDialogOpen(true)
+    setIsCallInitiated(true) // Set to true when call is initiated
+  }
+
+  // New function to handle when call is logged
+  const handleCallLogged = (callLogId: string) => {
+    setIsCallInitiated(false) // Reset the call initiated state
   }
 
   const handleStatusUpdate = async (newStatus: string, note?: string, callbackDate?: string) => {
@@ -608,18 +616,7 @@ export function LeadsTable({ leads = [], telecallers = [] }: LeadsTableProps) {
                   Name {sortField === 'name' && (sortDirection === 'asc' ? <ChevronUp className="inline h-4 w-4" /> : <ChevronDown className="inline h-4 w-4" />)}
                 </TableHead>
               )}
-              {visibleColumns.contact && (
-                  <TableCell>
-                    <QuickActions
-                      phone={getSafeValue(lead.phone, '')}
-                      email={getSafeValue(lead.email, '')}
-                      leadId={lead.id}
-                      onCallInitiated={() => {
-                        handleCallInitiated(lead);
-                      }}
-                    />
-                  </TableCell>
-                )}
+              {visibleColumns.contact && <TableHead>Contact</TableHead>}
               {visibleColumns.company && (
                 <TableHead 
                   className="cursor-pointer" 
@@ -913,6 +910,21 @@ export function LeadsTable({ leads = [], telecallers = [] }: LeadsTableProps) {
         <div className="text-center py-8 text-gray-500">
           No leads found. Try adjusting your filters or upload some leads.
         </div>
+      )}
+      
+      {selectedLead && (
+        <LeadStatusDialog
+          leadId={selectedLead.id}
+          currentStatus={selectedLead.status}
+          open={isStatusDialogOpen}
+          onOpenChange={(open) => {
+            setIsStatusDialogOpen(open)
+            if (!open) setIsCallInitiated(false) // Reset when dialog is closed
+          }}
+          onStatusUpdate={handleStatusUpdate}
+          isCallInitiated={isCallInitiated}
+          onCallLogged={handleCallLogged}
+        />
       )}
     </div>
   )

@@ -37,6 +37,8 @@ export class NotificationService {
 
   // Show browser notification
   async showBrowserNotification(options: NotificationOptions): Promise<void> {
+    console.log("Attempting to show browser notification:", options)
+    
     if (!this.isPermissionGranted()) {
       console.warn("Notification permission not granted")
       return

@@ -23,6 +23,8 @@ export class LeadAssignmentNotificationManager {
   // Send notification when lead is assigned
   async notifyLeadAssignment(notification: LeadAssignmentNotification): Promise<void> {
     try {
+      console.log("Sending lead assignment notification:", notification)
+      
       // Get assigned user details
       const { data: assignedUser, error: userError } = await this.supabase
         .from("users")
@@ -38,6 +40,7 @@ export class LeadAssignmentNotificationManager {
       // Check if user has assignment notifications enabled
       const preferences = assignedUser.notification_preferences || {}
       if (preferences.assignment_notifications === false) {
+        console.log("User has disabled assignment notifications")
         return // User has disabled assignment notifications
       }
 
@@ -46,15 +49,16 @@ export class LeadAssignmentNotificationManager {
       const body = `${notification.leadName} has been assigned to you`
       const details = this.formatLeadDetails(notification)
 
+      console.log("Showing browser notification")
       // Show browser notification
       await notificationService.showBrowserNotification({
         title,
         body: `${body}${details}`,
         tag: `lead-assignment-${notification.leadId}`,
         requireInteraction: true,
-        // REMOVED ACTIONS - they are not supported in regular notifications
       })
 
+      console.log("Showing toast notification")
       // Show toast notification
       toast.success(title, {
         description: `${body}${details}`,
@@ -227,6 +231,8 @@ export class LeadAssignmentNotificationManager {
 
   // Setup real-time subscription for lead assignments
   setupRealtimeSubscription(userId: string): void {
+    console.log("Setting up real-time subscription for user:", userId)
+    
     const channel = this.supabase
       .channel("lead-assignments")
       .on(
@@ -235,34 +241,94 @@ export class LeadAssignmentNotificationManager {
           event: "UPDATE",
           schema: "public",
           table: "leads",
-          filter: `assigned_to=eq.${userId}`,
         },
-        (payload) => {
-          // Check if this is a new assignment (assigned_to changed from null)
-          if (payload.old.assigned_to === null && payload.new.assigned_to === userId) {
+        (payload: any) => {
+          console.log("Received lead assignment UPDATE event:", payload)
+          // Check if this is a new assignment to this user
+          if (payload.new.assigned_to === userId && 
+              (payload.old.assigned_to === null || payload.old.assigned_to !== userId)) {
+            console.log("New lead assignment detected for user:", userId)
             this.handleRealtimeAssignment(payload.new)
           }
         },
       )
-      .subscribe()
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "leads",
+        },
+        (payload: any) => {
+          console.log("Received new lead INSERT event:", payload)
+          // Check if the new lead is assigned to this user
+          if (payload.new.assigned_to === userId) {
+            console.log("New lead assigned to user on insert:", userId)
+            this.handleRealtimeAssignment(payload.new)
+          }
+        },
+      )
+      .subscribe((status: any) => {
+        console.log("Subscription status changed:", status)
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to lead assignments for user:", userId)
+        }
+      })
   }
 
   // Handle real-time assignment notification
   private async handleRealtimeAssignment(lead: any): Promise<void> {
-    const notification: LeadAssignmentNotification = {
-      leadId: lead.id,
-      leadName: lead.name,
-      leadPhone: lead.phone,
-      leadEmail: lead.email,
-      assignedTo: lead.assigned_to,
-      assignedBy: lead.assigned_by,
-      assignedAt: lead.assigned_at,
-      priority: lead.priority,
-      loanAmount: lead.loan_amount,
-      loanType: lead.loan_type,
+    try {
+      console.log("Handling real-time assignment for lead:", lead)
+      
+      // Get additional lead details if needed
+      let leadDetails = lead;
+      if (!lead.name || !lead.phone) {
+        const { data, error } = await this.supabase
+          .from("leads")
+          .select("name, phone, email, priority, loan_amount, loan_type, assigned_by, assigned_at")
+          .eq("id", lead.id)
+          .single()
+        
+        if (!error && data) {
+          leadDetails = { ...lead, ...data }
+        }
+      }
+      
+      const notification: LeadAssignmentNotification = {
+        leadId: leadDetails.id,
+        leadName: leadDetails.name || "Unknown Lead",
+        leadPhone: leadDetails.phone || "No Phone",
+        leadEmail: leadDetails.email,
+        assignedTo: leadDetails.assigned_to,
+        assignedBy: leadDetails.assigned_by || "System",
+        assignedAt: leadDetails.assigned_at || new Date().toISOString(),
+        priority: leadDetails.priority,
+        loanAmount: leadDetails.loan_amount,
+        loanType: leadDetails.loan_type,
+      }
+
+      await this.notifyLeadAssignment(notification)
+    } catch (error) {
+      console.error("Error handling real-time assignment:", error)
+    }
+  }
+
+  // Test function to manually trigger a notification
+  async testNotification(userId: string): Promise<void> {
+    console.log("Testing notification for user:", userId)
+    
+    const testNotification: LeadAssignmentNotification = {
+      leadId: "test-lead-id",
+      leadName: "Test Lead",
+      leadPhone: "+1234567890",
+      assignedTo: userId,
+      assignedBy: "System",
+      assignedAt: new Date().toISOString(),
+      priority: "high",
     }
 
-    await this.notifyLeadAssignment(notification)
+    await this.notifyLeadAssignment(testNotification)
   }
 }
 

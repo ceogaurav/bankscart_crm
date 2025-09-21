@@ -12,6 +12,8 @@ interface LeadStatusDialogProps {
   onStatusUpdate?: (newStatus: string) => void
   title?: string
   description?: string
+  isCallInitiated?: boolean // New prop to indicate if this is for a call
+  onCallLogged?: (callLogId: string) => void // New prop to notify when call is logged
 }
 
 export function LeadStatusDialog({ 
@@ -21,7 +23,9 @@ export function LeadStatusDialog({
   onOpenChange, 
   onStatusUpdate,
   title = "Update Lead Status",
-  description = "Update the status of this lead."
+  description = "Update the status of this lead.",
+  isCallInitiated = false,
+  onCallLogged
 }: LeadStatusDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,6 +38,8 @@ export function LeadStatusDialog({
           leadId={leadId} 
           currentStatus={currentStatus} 
           onStatusUpdate={onStatusUpdate}
+          isCallInitiated={isCallInitiated}
+          onCallLogged={onCallLogged}
         />
       </DialogContent>
     </Dialog>

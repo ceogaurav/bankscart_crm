@@ -67,8 +67,8 @@ export default async function CallHistoryPage({
   }
 
   // If you need lead information, fetch it separately
-  const leadIds = callLogs?.map(call => call.lead_id).filter(Boolean) || []
-  let leadsData = {}
+  const leadIds = callLogs?.map((call: { lead_id: any; }) => call.lead_id).filter(Boolean) || []
+  let leadsData: Record<string, any> = {}
   
   if (leadIds.length > 0) {
     const { data: leads } = await supabase
@@ -77,7 +77,7 @@ export default async function CallHistoryPage({
       .in("id", leadIds)
     
     if (leads) {
-      leadsData = leads.reduce((acc, lead) => {
+      leadsData = leads.reduce((acc: Record<string, any>, lead: { id: string | number; }) => {
         acc[lead.id] = lead
         return acc
       }, {} as Record<string, any>)
@@ -124,14 +124,29 @@ export default async function CallHistoryPage({
 
   // Calculate statistics
   const totalCalls = callLogs?.length || 0
-  const completedCalls = callLogs?.filter((call) => call.call_type === "completed").length || 0
-  const followUpRequired = callLogs?.filter((call) => call.follow_up_required).length || 0
-  const upcomingCalls = callLogs?.filter((call) => 
+  const completedCalls = callLogs?.filter((call: { call_type: string; }) => call.call_type === "completed").length || 0
+  const followUpRequired = callLogs?.filter((call: { follow_up_required: any; }) => call.follow_up_required).length || 0
+  const upcomingCalls = callLogs?.filter((call: { next_call_scheduled: string | number | Date; }) => 
     call.next_call_scheduled && isFuture(new Date(call.next_call_scheduled))
   ).length || 0
   const avgDuration = callLogs?.length
-    ? Math.round(callLogs.reduce((sum, call) => sum + (call.duration || 0), 0) / callLogs.length)
+    ? Math.round(callLogs.reduce((sum: number, call: { duration_seconds: number; }) => sum + (call.duration_seconds || 0), 0) / callLogs.length)
     : 0
+
+  // Calculate today's statistics
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const todayCalls = callLogs?.filter((call: { created_at: string | number | Date; }) => {
+    const callDate = new Date(call.created_at)
+    callDate.setHours(0, 0, 0, 0)
+    return callDate.getTime() === today.getTime()
+  }) || []
+  
+  const todayTotalCalls = todayCalls.length
+  const todayNR = todayCalls.filter((call: { call_result: string; }) => call.call_result === "nr").length
+  const todayNI = todayCalls.filter((call: { call_result: string; }) => call.call_result === "not_interested").length
+  const todayTotalDuration = todayCalls.reduce((sum: number, call: { duration_seconds: number; }) => sum + (call.duration_seconds || 0), 0)
 
   return (
     <div className="p-6 space-y-6">
@@ -143,7 +158,7 @@ export default async function CallHistoryPage({
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -190,11 +205,72 @@ export default async function CallHistoryPage({
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <User className="h-8 w-8 text-indigo-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Upcoming</p>
+                <p className="text-2xl font-bold text-gray-900">{upcomingCalls}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Phone className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Today's Calls</p>
+                <p className="text-2xl font-bold text-gray-900">{todayTotalCalls}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <User className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">NR Today</p>
+                <p className="text-2xl font-bold text-gray-900">{todayNR}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <User className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">NI Today</p>
+                <p className="text-2xl font-bold text-gray-900">{todayNI}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Today's Duration</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatDuration(todayTotalDuration)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Call History List */}
       <div className="space-y-4">
-        {callLogs?.map((call) => {
+        {callLogs?.map((call: any) => {
           const lead = leadsData[call.lead_id]
           return (
             <Card key={call.id} className="hover:shadow-md transition-shadow">
@@ -238,7 +314,7 @@ export default async function CallHistoryPage({
                         </span>
                         <span className="flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
-                          {formatDuration(call.duration)}
+                          {formatDuration(call.duration_seconds)}
                         </span>
                       </div>
                       {call.next_call_scheduled && (

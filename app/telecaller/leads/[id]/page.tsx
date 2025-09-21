@@ -120,7 +120,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           type: "call",
           id: call.id,
           title: "Call made",
-          description: `Duration: ${call.duration || "N/A"} seconds, Outcome: ${call.outcome || "N/A"}`,
+          description: `Duration: ${call.duration_seconds || "N/A"} seconds, Outcome: ${call.outcome || "N/A"}`,
           user: "You",
           date: call.called_at,
           icon: <Phone className="h-4 w-4" />,

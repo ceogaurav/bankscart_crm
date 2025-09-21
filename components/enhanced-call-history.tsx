@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { callLogsPermissions, type CallLogPermissions } from "@/lib/call-logs-permissions"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Phone, PhoneCall, AlertCircle, Shield, Clock } from "lucide-react"
@@ -47,7 +47,7 @@ export function EnhancedCallHistory({ leadId, leadPhone }: EnhancedCallHistoryPr
   const [isLogging, setIsLogging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
-  const { callLogPermission, requestCallLogPermission } = useCallTracking()
+  const { callLogPermission, requestCallLogPermission, formatDuration } = useCallTracking()
 
   useEffect(() => {
     initializeComponent()
@@ -381,31 +381,19 @@ export function EnhancedCallHistory({ leadId, leadPhone }: EnhancedCallHistoryPr
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    Type: {call.call_type}
-                  </div>
-                  
-                  {call.duration_seconds > 0 && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      Duration: {Math.floor(call.duration_seconds / 60)}m {call.duration_seconds % 60}s
-                    </div>
+                  {call.duration_seconds > 0 ? (
+                    <p className="text-sm">
+                      <Clock className="h-4 w-4 inline mr-1" />
+                      Duration: {formatDuration(call.duration_seconds)}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">No duration recorded</p>
                   )}
-
-                  {call.follow_up_required && (
-                    <Badge variant="outline" className="text-orange-600 border-orange-600">
-                      Follow-up Required
-                    </Badge>
-                  )}
-
-                  {call.next_call_scheduled && (
-                    <p className="text-sm text-blue-600">
-                      Next call: {format(new Date(call.next_call_scheduled), "MMM d, yyyy 'at' h:mm a")}
+                  {call.notes && (
+                    <p className="text-sm bg-gray-100 p-2 rounded">
+                      {call.notes}
                     </p>
                   )}
-
-                  {call.notes && <p className="text-sm bg-gray-50 p-2 rounded">{call.notes}</p>}
                 </div>
               </div>
             ))}

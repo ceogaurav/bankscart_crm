@@ -9,6 +9,7 @@ import { AppShortcuts } from "@/components/pwa/app-shortcuts"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { CallLogPermission } from "@/components/device/call-log-permission"
 import { useEffect } from "react"
+import { toast } from "sonner"
 
 export default function PWAComponents() {
   useEffect(() => {
@@ -29,11 +30,17 @@ export default function PWAComponents() {
   const handlePermissionGranted = () => {
     console.log("Call log permission granted")
     // Here you could initialize call log tracking
+    toast.success("Call log access enabled!", {
+      description: "Your calls will now be tracked automatically when possible"
+    })
   }
 
   const handlePermissionDenied = () => {
     console.log("Call log permission denied")
     // Here you could show alternative options
+    toast.info("Manual call logging", {
+      description: "You can still log calls manually from lead details"
+    })
   }
 
   return (

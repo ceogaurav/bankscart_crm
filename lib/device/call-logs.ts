@@ -4,7 +4,7 @@ export interface CallLog {
   id: string
   phoneNumber: string
   displayName?: string
-  duration: number
+  duration_seconds: number
   startTime: Date
   endTime: Date
   callType: "incoming" | "outgoing" | "missed"
@@ -17,10 +17,25 @@ export class CallLogsManager {
    * is not widely supported and requires special permissions
    */
   static isAvailable(): boolean {
+    // Check if we're in a secure context (required for most device APIs)
+    if (typeof window === "undefined" || !window.isSecureContext) {
+      return false;
+    }
+
+    // For mobile devices, we'll return true to allow the permission request flow
+    // This gives users a chance to grant permissions if they're available
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // On mobile devices, we'll allow the permission flow even if we know it might not work
+    // This gives users a chance to see if their specific device/browser supports it
+    if (isMobile) {
+      return true;
+    }
+    
     // In a real implementation, this would check for specific API availability
     // For now, we'll return false to indicate that direct call log access
     // is not available in most browsers
-    return false
+    return false;
   }
 
   /**
@@ -34,6 +49,16 @@ export class CallLogsManager {
       if (typeof window === "undefined" || !window.isSecureContext) {
         console.warn("Call logs API requires a secure context (HTTPS)")
         return "denied"
+      }
+
+      // For mobile devices, we'll show a more helpful message
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // On mobile, we'll return "prompt" to indicate that the user should be prompted
+        // In a real implementation with proper permissions, we would actually request permission here
+        console.warn("Call logs API support varies by device and browser. Manual logging is recommended.");
+        return "prompt";
       }
 
       // In a real implementation, we would use:

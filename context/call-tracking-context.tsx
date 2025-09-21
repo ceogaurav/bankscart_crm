@@ -18,6 +18,7 @@ interface CallTrackingContextType {
   endCall: (leadId: string) => void
   updateCallDuration: (leadId: string, callLogId: string) => Promise<number>
   requestCallLogPermission: () => Promise<void>
+  formatDuration: (seconds: number) => string
 }
 
 const CallTrackingContext = createContext<CallTrackingContextType | undefined>(undefined)
@@ -123,6 +124,13 @@ export function CallTrackingProvider({ children }: { children: React.ReactNode }
     return 0
   }
 
+  // New function to format seconds to MM:SS
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
   return (
     <CallTrackingContext.Provider value={{
       activeCall: activeCall ? { ...activeCall, timer } : null,
@@ -130,7 +138,8 @@ export function CallTrackingProvider({ children }: { children: React.ReactNode }
       startCall,
       endCall,
       updateCallDuration,
-      requestCallLogPermission
+      requestCallLogPermission,
+      formatDuration
     }}>
       {children}
     </CallTrackingContext.Provider>

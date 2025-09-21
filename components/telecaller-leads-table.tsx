@@ -119,9 +119,17 @@ export function TelecallerLeadsTable({
     }
   }
 
+  const [isCallInitiated, setIsCallInitiated] = useState(false) // New state to track if call is initiated
+
   const handleCallInitiated = (lead: Lead) => {
     setSelectedLead(lead)
     setIsStatusDialogOpen(true)
+    setIsCallInitiated(true) // Set to true when call is initiated
+  }
+
+  // New function to handle when call is logged
+  const handleCallLogged = (callLogId: string) => {
+    setIsCallInitiated(false) // Reset the call initiated state
   }
 
   const handleStatusUpdate = async (newStatus: string, note?: string, callbackDate?: string) => {
@@ -532,8 +540,13 @@ export function TelecallerLeadsTable({
           leadId={selectedLead.id}
           currentStatus={selectedLead.status}
           open={isStatusDialogOpen}
-          onOpenChange={setIsStatusDialogOpen}
+          onOpenChange={(open) => {
+            setIsStatusDialogOpen(open)
+            if (!open) setIsCallInitiated(false) // Reset when dialog is closed
+          }}
           onStatusUpdate={handleStatusUpdate}
+          isCallInitiated={isCallInitiated}
+          onCallLogged={handleCallLogged}
         />
       )}
     </div>

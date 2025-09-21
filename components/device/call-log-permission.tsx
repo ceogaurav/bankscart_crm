@@ -34,8 +34,7 @@ export function CallLogPermission({ onPermissionGranted, onPermissionDenied }: C
         return
       }
 
-      // In a real implementation, we would check the actual permission status
-      // For now, we'll set it to prompt
+      // For mobile devices, we'll set to "prompt" to encourage users to try
       setPermissionState("prompt")
     } catch (error) {
       console.error("Error checking call log permission status:", error)
@@ -57,13 +56,14 @@ export function CallLogPermission({ onPermissionGranted, onPermissionDenied }: C
         })
         onPermissionGranted?.()
       } else if (result === "denied") {
-        toast.error("Call log access denied", {
-          description: "You can still log calls manually"
+        toast.error("Call log access not available", {
+          description: "Automatic call tracking is not supported on your device. Manual logging is always available."
         })
         onPermissionDenied?.()
       } else {
-        toast.info("Call log access request pending", {
-          description: "Please check your device settings"
+        // For "prompt" state, show informational message
+        toast.info("Call log access information", {
+          description: "Some devices support automatic call logging. If available, you'll see a permission prompt. Manual logging is always available."
         })
       }
     } catch (error) {
@@ -84,16 +84,58 @@ export function CallLogPermission({ onPermissionGranted, onPermissionDenied }: C
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
-            Call Log Access Unavailable
+            Call Log Access Information
           </CardTitle>
           <CardDescription>
-            Call log access is not supported on this device or browser. You can still log calls manually.
+            Automatic call log access has limitations on web browsers.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Shield className="h-4 w-4" />
-            <span>Manual call logging is always available</span>
+            <span>Manual call logging is always available and works on all devices</span>
+          </div>
+          
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-800 mb-2">Enhanced Manual Logging</h4>
+            <ul className="text-sm text-blue-700 list-disc pl-5 space-y-1 mb-3">
+              <li>One-tap call initiation from lead details</li>
+              <li>Automatic call duration tracking</li>
+              <li>Quick note-taking during calls</li>
+              <li>Seamless call log creation after calls</li>
+            </ul>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                toast.info("Manual Logging Tips", {
+                  description: "After making a call, return to this page to quickly log your call with duration and notes."
+                })
+              }}
+            >
+              View Logging Tips
+            </Button>
+          </div>
+          
+          <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <h4 className="font-medium text-purple-800 mb-2">Native Mobile App (Recommended for Automatic Logging)</h4>
+            <p className="text-sm text-purple-700 mb-3">
+              For true automatic call logging, a native mobile app is required with proper permissions.
+            </p>
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => {
+                  toast.info("Native App Development", {
+                    description: "A native app would require Android/iOS development with call log permissions."
+                  })
+                }}
+              >
+                Learn About Native App Development
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -137,7 +179,7 @@ export function CallLogPermission({ onPermissionGranted, onPermissionDenied }: C
             disabled={isLoading}
             className="w-full"
           >
-            {isLoading ? "Requesting Access..." : "Request Call Log Access"}
+            {isLoading ? "Checking Access..." : "Check Call Log Access"}
           </Button>
         )}
 
@@ -160,8 +202,8 @@ export function CallLogPermission({ onPermissionGranted, onPermissionDenied }: C
           <p>
             • Your call data is stored securely and never shared with third parties
           </p>
-          <p>
-            • You can revoke this permission at any time in your device settings
+          <p className="text-blue-600 font-medium">
+            • Manual call logging is always available and works on all devices
           </p>
         </div>
       </CardContent>

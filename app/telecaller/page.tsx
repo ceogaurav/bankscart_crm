@@ -6,6 +6,7 @@ import { RecentLeads } from "@/components/recent-leads"
 import { redirect } from "next/navigation"
 import { AttendanceWidget } from "@/components/attendance-widget"
 import { NotificationProvider } from "@/components/notification-provider"
+// import { TestNotifications } from "@/components/test-notifications"  // Remove this in production
 
 export default async function TelecallerDashboard() {
   const supabase = await createClient()
@@ -80,6 +81,9 @@ export default async function TelecallerDashboard() {
             <p className="text-gray-600 mt-1">Welcome to your telecaller workspace</p>
           </div>
         </div>
+
+        {/* Test Notifications - Remove this in production */}
+        <TestNotifications />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
